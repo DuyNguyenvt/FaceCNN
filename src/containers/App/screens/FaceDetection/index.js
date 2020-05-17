@@ -273,8 +273,8 @@ class FaceDetection extends React.Component {
           <video
             id="video"
             ref={this.refVideo}
-            width="500"
-            height="500"
+            width="700"
+            height="520"
             autoPlay
             muted
           />
