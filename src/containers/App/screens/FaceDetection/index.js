@@ -15,12 +15,13 @@ const VideoWrapper = styled.div`
   position: relative;
   canvas {
     position: absolute;
-    top: 0;
+    top: 10px;
     left: 0;
     border: solid 2px green;
   }
   border: solid 1px;
   border-radius: 10px;
+  padding-top: 10px;
 `;
 
 const Control = styled.div`
@@ -28,7 +29,6 @@ const Control = styled.div`
   flex-direction: column;
   padding: 0px 10px;
   width: 20%;
-  border
 `;
 
 const StartStopControl = styled.div`
@@ -65,6 +65,7 @@ const SnapShotWrapper = styled.div`
   border-radius: 10px;
   margin-left: 5px;
   position: relative;
+  padding-top: 10px;
 `;
 
 class FaceDetection extends React.Component {
@@ -175,7 +176,7 @@ class FaceDetection extends React.Component {
               const bestMatch = ref.state.faceMatcher.findBestMatch(
                 detections[0].descriptor
               );
-              this.setState({ perception: bestMatch });
+              ref.setState({ perception: bestMatch });
               console.log(bestMatch);
               console.log(bestMatch.toString());
             }
