@@ -1,0 +1,43 @@
+.sf-input {
+  &--primary {
+    margin-bottom: 0px !important;
+    &.error {
+      margin-bottom: 5px !important;
+    }
+
+    label {
+      font-size: 14px;
+      line-height: 17px;
+      margin-bottom: 0;
+    }
+
+    .form-control,
+    .form-control-file {
+      border-radius: 100px;
+      &.bordered {
+        border: solid 1px;
+        border-radius: 0.25rem;
+        margin-top: 10px;
+        padding: 10px;
+      }
+
+      &:disabled,
+      &[readonly] {
+        background: lightgray;
+        border: none !important;
+        cursor: not-allowed !important;
+        opacity: 0.9;
+      }
+
+      &:focus {
+        // color: $ncp_dark;
+        box-shadow: none;
+      }
+
+      &::placeholder {
+        font-style: italic;
+        // color: $ncp-gray-2;
+      }
+    }
+  }
+}

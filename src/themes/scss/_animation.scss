@@ -1,0 +1,41 @@
+@keyframes moveUp {
+  from {
+    transform: translateY(4rem);
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.moveUp {
+  animation: moveUp 1s forwards;
+}
+
+@keyframes expandSide {
+  from {
+    width: 0;
+  }
+  to {
+    width: 100%;
+    overflow: hidden;
+  }
+}
+
+.expandSide {
+  animation: expandSide 2s forwards linear;
+  //   border: solid 1px;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(350deg);
+  }
+}
+
+.spin {
+  animation: spin 2.5s forwards linear;
+}
