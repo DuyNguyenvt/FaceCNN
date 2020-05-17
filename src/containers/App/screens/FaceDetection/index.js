@@ -176,8 +176,8 @@ class FaceDetection extends React.Component {
               const bestMatch = ref.state.faceMatcher.findBestMatch(
                 detections[0].descriptor
               );
-              ref.setState({ perception: bestMatch });
-              console.log(bestMatch);
+              // ref.setState({ perception: bestMatch });
+              // console.log(bestMatch);
               console.log(bestMatch.toString());
             }
           }
