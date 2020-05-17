@@ -1,17 +1,14 @@
 import React from "react";
 import styled from "styled-components";
 // import * as canvas from "canvas";
-import { toast } from "react-toastify";
+import { toastLux } from "utils/toast";
 
 import { Button } from "reactstrap";
 import * as faceapi from "face-api.js";
-var path = require("path");
 
 const Wrapper = styled.div`
   display: flex;
-  /* justify-content: center; */
-  /* align-items: center; */
-  border: solid 2px;
+  margin-bottom: 10px;
 `;
 
 const VideoWrapper = styled.div`
@@ -22,15 +19,16 @@ const VideoWrapper = styled.div`
     left: 0;
     border: solid 2px green;
   }
-  border: solid 2px;
+  border: solid 1px;
+  border-radius: 10px;
 `;
 
 const Control = styled.div`
   display: flex;
   flex-direction: column;
-  border: solid 2px green;
-  padding: 20px 10px;
+  padding: 0px 10px;
   width: 20%;
+  border
 `;
 
 const StartStopControl = styled.div`
@@ -62,7 +60,12 @@ const ControlTitle = styled.div`
   padding: 0 3px;
 `;
 
-const SnapShotWrapper = styled.div``;
+const SnapShotWrapper = styled.div`
+  border: solid 1px;
+  border-radius: 10px;
+  margin-left: 5px;
+  position: relative;
+`;
 
 class FaceDetection extends React.Component {
   constructor(props) {
@@ -72,6 +75,7 @@ class FaceDetection extends React.Component {
       isStartBtnDisabled: true,
       faceMatcher: null,
       resizeWindow: null,
+      perception: 1,
     };
     this.detectTimer = null;
     this.refVideo = React.createRef();
@@ -171,6 +175,8 @@ class FaceDetection extends React.Component {
               const bestMatch = ref.state.faceMatcher.findBestMatch(
                 detections[0].descriptor
               );
+              this.setState({ perception: bestMatch });
+              console.log(bestMatch);
               console.log(bestMatch.toString());
             }
           }
@@ -200,7 +206,7 @@ class FaceDetection extends React.Component {
       faceapi.draw.drawFaceLandmarks(canvas, resizedDetections);
       faceapi.draw.drawFaceExpressions(canvas, resizedDetections);
     } else {
-      toast.wraning("Please choose another snapshot");
+      toastLux("Please choose another snapshot");
     }
   }
 
@@ -223,7 +229,7 @@ class FaceDetection extends React.Component {
   }
 
   render() {
-    const { isStartBtnDisabled } = this.state;
+    const { isStartBtnDisabled, perception } = this.state;
     return (
       <Wrapper>
         <Control>
@@ -268,8 +274,13 @@ class FaceDetection extends React.Component {
               Compare
             </Button>
           </SnapCompareControl>
+          <SnapCompareControl>
+            <ControlTitle>Match Perception</ControlTitle>
+            <div>Match: {perception}</div>
+          </SnapCompareControl>
         </Control>
         <VideoWrapper id="camFrame">
+          <ControlTitle>Stream video</ControlTitle>
           <video
             id="video"
             ref={this.refVideo}
@@ -280,6 +291,7 @@ class FaceDetection extends React.Component {
           />
         </VideoWrapper>
         <SnapShotWrapper>
+          <ControlTitle>Reference picture</ControlTitle>
           <canvas id="myCanvas" width="600" height="430"></canvas>
         </SnapShotWrapper>
       </Wrapper>
