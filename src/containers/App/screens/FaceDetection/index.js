@@ -11,6 +11,11 @@ const Wrapper = styled.div`
   justify-content: center;
   margin-top: 50px;
   align-items: center;
+
+`;
+
+const VideoWrapper = styled.div`
+  position: relative;
   canvas {
     position: absolute;
     top: 0;
@@ -19,9 +24,12 @@ const Wrapper = styled.div`
   }
 `;
 
-const VideoWrapper = styled.div`
-  position: relative;
+const Control = styled.div`
+  display: flex;
+  flex-direction: column;
 `;
+
+const SnapShotWrapper = styled.div``;
 
 class FaceDetection extends React.Component {
   constructor(props) {
@@ -29,6 +37,8 @@ class FaceDetection extends React.Component {
     this.state = {
       videoTrack: null,
       isStartBtnDisabled: true,
+      faceMatcher: null,
+      resizeWindow: null,
     };
     this.detectTimer = null;
     this.refVideo = React.createRef();
@@ -39,10 +49,12 @@ class FaceDetection extends React.Component {
       const uri = "/weights";
       // console.log(path.resolve(__dirname));
       Promise.all([
+        faceapi.loadSsdMobilenetv1Model(uri),
         faceapi.nets.tinyFaceDetector.loadFromUri(uri),
         faceapi.nets.faceLandmark68Net.loadFromUri(uri),
         faceapi.nets.faceRecognitionNet.loadFromUri(uri),
         faceapi.nets.faceExpressionNet.loadFromUri(uri),
+        faceapi.nets.faceD
       ])
         .then(() => {
           this.setState({ isStartBtnDisabled: false });
@@ -55,14 +67,7 @@ class FaceDetection extends React.Component {
   }
 
   componentWillUnmount() {
-    // const { videoTrack } = this.state;
-    // const video = document.getElementById("video");
-    // if (videoTrack) {
-    //   video.pause();
-    //   video.src = "";
-    //   videoTrack[0].stop();
-    //   videoTrack[1].stop();
-    // }
+
     this.stopStream();
   }
 
@@ -87,9 +92,9 @@ class FaceDetection extends React.Component {
         {
           audio: { echoCancellation: true },
           video: {
-            deviceId: "8d1dcdff-2b3d-46d2-8746-e7c6e6615233",
-            width: { min: 720 },
-            height: { min: 560 },
+            // deviceId: "8d1dcdff-2b3d-46d2-8746-e7c6e6615233",
+            // width: { min: 720 },
+            // height: { min: 560 },
           },
         },
         (stream) => {
@@ -114,107 +119,86 @@ class FaceDetection extends React.Component {
         const displaySize = { width: video.width, height: video.height };
         faceapi.matchDimensions(canvas, displaySize);
         ref.detectTimer = setInterval(async () => {
+          // , new faceapi.TinyFaceDetectorOptions()
           const detections = await faceapi
-            .detectAllFaces(video, new faceapi.TinyFaceDetectorOptions())
+            .detectAllFaces(video)
             .withFaceLandmarks()
-            .withFaceExpressions();
+            .withFaceExpressions()
+            .withFaceDescriptors();
           const resizedDetections = faceapi.resizeResults(
             detections,
             displaySize
           );
+
           canvas.getContext("2d").clearRect(0, 0, canvas.width, canvas.height);
           faceapi.draw.drawDetections(canvas, resizedDetections);
           faceapi.draw.drawFaceLandmarks(canvas, resizedDetections);
           faceapi.draw.drawFaceExpressions(canvas, resizedDetections);
-        }, 150);
+          if (ref.state.faceMatcher){
+            // console.log(detections)
+            if(detections.length !==0){
+
+            const bestMatch = ref.state.faceMatcher.findBestMatch(detections[0].descriptor)
+            console.log(bestMatch.toString())
+            }
+
+          }
+
+        }, 50);
       };
 
-      // video.addEventListener("play", () => {
-      //   if (this.state.videoTrack !== null) {
-      //     const canvas = faceapi.createCanvasFromMedia(video);
-      //     // document.body.append(canvas);
-      //     document.querySelector("#camFrame").append(canvas);
-
-      //     const displaySize = { width: video.width, height: video.height };
-      //     faceapi.matchDimensions(canvas, displaySize);
-      //     setInterval(async () => {
-      //       const detections = await faceapi
-      //         .detectAllFaces(video, new faceapi.TinyFaceDetectorOptions())
-      //         .withFaceLandmarks()
-      //         .withFaceExpressions();
-      //       const resizedDetections = faceapi.resizeResults(
-      //         detections,
-      //         displaySize
-      //       );
-      //       canvas
-      //         .getContext("2d")
-      //         .clearRect(0, 0, canvas.width, canvas.height);
-      //       faceapi.draw.drawDetections(canvas, resizedDetections);
-      //       faceapi.draw.drawFaceLandmarks(canvas, resizedDetections);
-      //       faceapi.draw.drawFaceExpressions(canvas, resizedDetections);
-      //     }, 150);
-      //   }
-      // });
     }
+  }
 
-    // await this.handleDraw();
+  async snapShot(){
+    const video = document.getElementById("video");
+    let canvas = document.getElementById("myCanvas");
+    let ctx = canvas.getContext('2d');
+      // Draws current image from the video element into the canvas
+     ctx.drawImage(video, 0,0, canvas.width, canvas.height);
+    //  canvas.getContext("2d").clearRect(0, 0, canvas.width, 
+    const displaySize = { width: 400, height: 350 };
 
-    // navigator.getUserMedia(
-    //   {
-    //     video: true,
-    //   },
-    //   (stream) => {
-    //     this.handleStream(stream);
-    //     this.setState({
-    //       videoTrack: stream.getTracks(),
-    //     });
-    //   },
-    //   (error) => console.log(error)
-    // );
+    const detections = await faceapi
+    .detectAllFaces(document.getElementById("myCanvas"))
+    .withFaceLandmarks()
+    .withFaceExpressions()
+    .withFaceDescriptors();
+  const resizedDetections = faceapi.resizeResults(
+    detections,
+    displaySize
+  );
 
-    // const uri = "/weights";
-    // Promise.all([
-    //   // faceapi.nets.tinyFaceDetector.loadFromUri(uri),
-    //   faceapi.nets.faceLandmark68Net.loadFromUri(uri),
-    //   // faceapi.nets.faceRecognitionNet.loadFromUri(uri),
-    //   // faceapi.nets.faceExpressionNet.loadFromUri(uri),
-    // ]).then(() => {
-    //   const canvas = faceapi.createCanvasFromMedia(this.refVideo.current);
-    //   document.body.append(canvas);
-    //   const displaySize = {
-    //     width: this.refVideo.current.width,
-    //     height: this.refVideo.current.height,
-    //   };
-    //   faceapi.matchDimensions(canvas, displaySize);
-    //   setInterval(async () => {
-    //     const detections = await faceapi
-    //       .detectAllFaces(
-    //         this.refVideo.current.srcObject,
-    //         new faceapi.TinyFaceDetectorOptions()
-    //       )
-    //       .withFaceLandmarks()
-    //       .withFaceExpressions();
-    //     const resizedDetections = faceapi.resizeResults(
-    //       detections,
-    //       displaySize
-    //     );
-    //     canvas.getContext("2d").clearRect(0, 0, canvas.width, canvas.height);
-    //     faceapi.draw.drawDetections(canvas, resizedDetections);
-    //     faceapi.draw.drawFaceLandmarks(canvas, resizedDetections);
-    //     faceapi.draw.drawFaceExpressions(canvas, resizedDetections);
-    //   }, 100);
-    // });
+     faceapi.draw.drawDetections(canvas, resizedDetections);
+     faceapi.draw.drawFaceLandmarks(canvas, resizedDetections);
+     faceapi.draw.drawFaceExpressions(canvas, resizedDetections);
 
-    // const displaySize = { width: .width, height: input.height };
-    // // resize the overlay canvas to the input dimensions
-    // const canvas = document.getElementById("overlay");
-    // faceapi.matchDimensions(canvas, displaySize);
+  }
+
+
+  async compare(){
+    const results = await faceapi
+    .detectAllFaces(document.getElementById("myCanvas"))
+    .withFaceLandmarks()
+    .withFaceDescriptors()
+
+    // , new faceapi.TinyFaceDetectorOptions()
+    // ,new faceapi.TinyFaceDetectorOptions()
+  if (!results.length) {
+    return
+  }
+  
+  // create FaceMatcher with automatically assigned labels
+  // from the detection results for the reference image
+  const faceMatcher = new faceapi.FaceMatcher(results)
+  this.setState({faceMatcher: faceMatcher})
   }
 
   render() {
     const { isStartBtnDisabled } = this.state;
     return (
       <Wrapper>
+        <Control>
         <Button
           color="success"
           onClick={() => {
@@ -232,6 +216,17 @@ class FaceDetection extends React.Component {
         >
           Stop Stream
         </Button>
+        <Button onClick={()=>{
+          this.snapShot();
+        }}>
+          snapshot
+        </Button>
+        <Button onClick={()=>{
+          this.compare();
+        }}>
+          Compare
+        </Button>
+        </Control>
         <VideoWrapper id="camFrame">
           <video
             id="video"
@@ -242,6 +237,12 @@ class FaceDetection extends React.Component {
             muted
           />
         </VideoWrapper>
+        <SnapShotWrapper>
+        <p>
+
+        Screenshots : </p>
+      <canvas  id="myCanvas" width="400" height="350"></canvas>  
+        </SnapShotWrapper>
       </Wrapper>
     );
   }
