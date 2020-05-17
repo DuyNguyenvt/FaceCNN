@@ -186,7 +186,7 @@ class FaceDetection extends React.Component {
     // Draws current image from the video element into the canvas
     ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
     //  canvas.getContext("2d").clearRect(0, 0, canvas.width,
-    const displaySize = { width: 300, height: 300 };
+    const displaySize = { width: 600, height: 430 };
 
     const detections = await faceapi
       .detectAllFaces(document.getElementById("myCanvas"))
@@ -273,8 +273,8 @@ class FaceDetection extends React.Component {
           <video
             id="video"
             ref={this.refVideo}
-            width="700"
-            height="520"
+            width="600"
+            height="430"
             autoPlay
             muted
           />
