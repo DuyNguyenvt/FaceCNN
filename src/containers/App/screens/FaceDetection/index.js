@@ -280,7 +280,7 @@ class FaceDetection extends React.Component {
           />
         </VideoWrapper>
         <SnapShotWrapper>
-          <canvas id="myCanvas" width="400" height="350"></canvas>
+          <canvas id="myCanvas" width="600" height="430"></canvas>
         </SnapShotWrapper>
       </Wrapper>
     );
