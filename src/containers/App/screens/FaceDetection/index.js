@@ -102,7 +102,6 @@ class FaceDetection extends React.Component {
       faceapi.nets.faceLandmark68Net.loadFromUri(uri),
       faceapi.nets.faceRecognitionNet.loadFromUri(uri),
       faceapi.nets.faceExpressionNet.loadFromUri(uri),
-      // faceapi.nets.faceD
     ])
       .then(() => {
         this.setState({ isStartBtnDisabled: false });
@@ -145,9 +144,6 @@ class FaceDetection extends React.Component {
         (stream) => {
           video.srcObject = stream;
           this.videoTrack = stream.getTracks();
-          // this.setState({
-          //   videoTrack: stream.getTracks(),
-          // });
         },
         (err) => console.error(err)
       );
@@ -208,13 +204,10 @@ class FaceDetection extends React.Component {
       faceapi.draw.drawFaceExpressions(canvas, resizedDetections);
 
       // ? save facematcher
-
       if (!detections.length) {
         return;
       }
 
-      // create FaceMatcher with automatically assigned labels
-      // from the detection results for the reference image
       this.faceMatcher = new faceapi.FaceMatcher(detections);
     } else {
       toastLux(
@@ -225,7 +218,6 @@ class FaceDetection extends React.Component {
 
   async compare() {
     if (this.faceMatcher) {
-      // console.log(detections)
       if (this.videoDetections.length !== 0) {
         const bestMatch = this.faceMatcher.findBestMatch(
           this.videoDetections[0].descriptor
@@ -308,7 +300,6 @@ class FaceDetection extends React.Component {
             ref={this.refVideo}
             width="600"
             height="430"
-            // autoPlay
             muted
           />
         </VideoWrapper>
