@@ -2,6 +2,7 @@ import React from "react";
 import styled from "styled-components";
 // import * as canvas from "canvas";
 import { toastLux } from "utils/toast";
+import {Spinner} from 'reactstrap';
 
 import { Button } from "reactstrap";
 import * as faceapi from "face-api.js";
@@ -17,7 +18,6 @@ const VideoWrapper = styled.div`
     position: absolute;
     top: 10px;
     left: 0;
-    border: solid 2px green;
   }
   border: solid 1px;
   border-radius: 10px;
@@ -68,6 +68,18 @@ const SnapShotWrapper = styled.div`
   padding-top: 10px;
 `;
 
+const SpinnerWrapper = styled.div`
+  border: solid 2px;
+  position: absolute;
+  height: 100%;
+  width: 100%;
+  background: transparent;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+
+`;  
+
 class FaceDetection extends React.Component {
   constructor(props) {
     super(props);
@@ -77,13 +89,14 @@ class FaceDetection extends React.Component {
       faceMatcher: null,
       resizeWindow: null,
       perception: 1,
+      isLoadingVideo: false,
     };
     this.detectTimer = null;
     this.refVideo = React.createRef();
   }
   async componentDidMount() {
-    setTimeout(() => {
-      const video = document.getElementById("video");
+    // setTimeout(() => {
+      // const video = document.getElementById("video");
       const uri = "/weights";
       // console.log(path.resolve(__dirname));
       Promise.all([
@@ -92,7 +105,7 @@ class FaceDetection extends React.Component {
         faceapi.nets.faceLandmark68Net.loadFromUri(uri),
         faceapi.nets.faceRecognitionNet.loadFromUri(uri),
         faceapi.nets.faceExpressionNet.loadFromUri(uri),
-        faceapi.nets.faceD,
+        // faceapi.nets.faceD
       ])
         .then(() => {
           this.setState({ isStartBtnDisabled: false });
@@ -101,7 +114,7 @@ class FaceDetection extends React.Component {
           console.log("err", err);
           this.setState({ isStartBtnDisabled: false });
         });
-    }, 3000);
+    // }, 3000);
   }
 
   componentWillUnmount() {
@@ -123,6 +136,7 @@ class FaceDetection extends React.Component {
   }
 
   async startVideo() {
+    this.setState({isLoadingVideo: true})
     const video = document.getElementById("video");
     if (navigator.mediaDevices.getUserMedia !== null) {
       navigator.webkitGetUserMedia(
@@ -145,11 +159,10 @@ class FaceDetection extends React.Component {
 
       const ref = this;
 
-      video.onloadedmetadata = function (ev) {
+      video.onloadedmetadata = async function (ev) {
         //show in the video element what is being captured by the webcam
         video.play();
-        const canvas = faceapi.createCanvasFromMedia(video);
-
+        const canvas = await faceapi.createCanvasFromMedia(video);
         document.querySelector("#camFrame").append(canvas);
 
         const displaySize = { width: video.width, height: video.height };
@@ -157,7 +170,7 @@ class FaceDetection extends React.Component {
         ref.detectTimer = setInterval(async () => {
           // , new faceapi.TinyFaceDetectorOptions()
           const detections = await faceapi
-            .detectAllFaces(video)
+            .detectAllFaces(video,  new faceapi.TinyFaceDetectorOptions())
             .withFaceLandmarks()
             .withFaceExpressions()
             .withFaceDescriptors();
@@ -165,23 +178,23 @@ class FaceDetection extends React.Component {
             detections,
             displaySize
           );
-
           canvas.getContext("2d").clearRect(0, 0, canvas.width, canvas.height);
           faceapi.draw.drawDetections(canvas, resizedDetections);
           faceapi.draw.drawFaceLandmarks(canvas, resizedDetections);
           faceapi.draw.drawFaceExpressions(canvas, resizedDetections);
-          if (ref.state.faceMatcher) {
-            // console.log(detections)
-            if (detections.length !== 0) {
-              const bestMatch = ref.state.faceMatcher.findBestMatch(
-                detections[0].descriptor
-              );
-              // ref.setState({ perception: bestMatch });
-              // console.log(bestMatch);
-              console.log(bestMatch.toString());
-            }
-          }
-        }, 50);
+          if(ref.state.isLoadingVideo) {ref.setState({isLoadingVideo: false})}
+          // if (ref.state.faceMatcher) {
+          //   // console.log(detections)
+          //   if (detections.length !== 0) {
+          //     const bestMatch = ref.state.faceMatcher.findBestMatch(
+          //       detections[0].descriptor
+          //     );
+          //     // ref.setState({ perception: bestMatch });
+          //     // console.log(bestMatch);
+          //     console.log(bestMatch.toString());
+          //   }
+          // }
+        }, 70);
       };
     }
   }
@@ -230,7 +243,7 @@ class FaceDetection extends React.Component {
   }
 
   render() {
-    const { isStartBtnDisabled, perception } = this.state;
+    const { isStartBtnDisabled, perception, isLoadingVideo } = this.state;
     return (
       <Wrapper>
         <Control>
@@ -282,12 +295,15 @@ class FaceDetection extends React.Component {
         </Control>
         <VideoWrapper id="camFrame">
           <ControlTitle>Stream video</ControlTitle>
+          {isLoadingVideo && <SpinnerWrapper>
+           <Spinner color="warning" />
+          </SpinnerWrapper>}
           <video
             id="video"
             ref={this.refVideo}
             width="600"
             height="430"
-            autoPlay
+            // autoPlay
             muted
           />
         </VideoWrapper>
