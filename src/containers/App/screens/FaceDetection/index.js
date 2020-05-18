@@ -2,7 +2,8 @@ import React from "react";
 import styled from "styled-components";
 // import * as canvas from "canvas";
 import { toastLux } from "utils/toast";
-import {Spinner} from 'reactstrap';
+import { Spinner } from "reactstrap";
+import * as _ from "lodash";
 
 import { Button } from "reactstrap";
 import * as faceapi from "face-api.js";
@@ -77,44 +78,39 @@ const SpinnerWrapper = styled.div`
   display: flex;
   justify-content: center;
   align-items: center;
-
-`;  
+`;
 
 class FaceDetection extends React.Component {
   constructor(props) {
     super(props);
     this.state = {
-      videoTrack: null,
       isStartBtnDisabled: true,
-      faceMatcher: null,
-      resizeWindow: null,
-      perception: 1,
+      perception: {},
       isLoadingVideo: false,
     };
     this.detectTimer = null;
     this.refVideo = React.createRef();
+    this.videoDetections = null;
+    this.faceMatcher = null;
+    this.videoTrack = null;
   }
   async componentDidMount() {
-    // setTimeout(() => {
-      // const video = document.getElementById("video");
-      const uri = "/weights";
-      // console.log(path.resolve(__dirname));
-      Promise.all([
-        faceapi.loadSsdMobilenetv1Model(uri),
-        faceapi.nets.tinyFaceDetector.loadFromUri(uri),
-        faceapi.nets.faceLandmark68Net.loadFromUri(uri),
-        faceapi.nets.faceRecognitionNet.loadFromUri(uri),
-        faceapi.nets.faceExpressionNet.loadFromUri(uri),
-        // faceapi.nets.faceD
-      ])
-        .then(() => {
-          this.setState({ isStartBtnDisabled: false });
-        })
-        .catch((err) => {
-          console.log("err", err);
-          this.setState({ isStartBtnDisabled: false });
-        });
-    // }, 3000);
+    const uri = "/weights";
+    Promise.all([
+      faceapi.loadSsdMobilenetv1Model(uri),
+      faceapi.nets.tinyFaceDetector.loadFromUri(uri),
+      faceapi.nets.faceLandmark68Net.loadFromUri(uri),
+      faceapi.nets.faceRecognitionNet.loadFromUri(uri),
+      faceapi.nets.faceExpressionNet.loadFromUri(uri),
+      // faceapi.nets.faceD
+    ])
+      .then(() => {
+        this.setState({ isStartBtnDisabled: false });
+      })
+      .catch((err) => {
+        console.log("err", err);
+        this.setState({ isStartBtnDisabled: false });
+      });
   }
 
   componentWillUnmount() {
@@ -122,21 +118,19 @@ class FaceDetection extends React.Component {
   }
 
   async stopStream() {
-    const { videoTrack } = this.state;
     const video = document.getElementById("video");
-    console.log(videoTrack);
-    if (videoTrack) {
+    if (this.videoTrack) {
       clearInterval(this.detectTimer);
       video.pause();
+      this.videoTrack[0].stop();
+      this.videoTrack[1].stop();
+      this.videoTrack = null;
       video.src = "";
-      videoTrack[0].stop();
-      videoTrack[1].stop();
-      this.setState({ videoTrack: null });
     }
   }
 
   async startVideo() {
-    this.setState({isLoadingVideo: true})
+    this.setState({ isLoadingVideo: true });
     const video = document.getElementById("video");
     if (navigator.mediaDevices.getUserMedia !== null) {
       navigator.webkitGetUserMedia(
@@ -150,9 +144,10 @@ class FaceDetection extends React.Component {
         },
         (stream) => {
           video.srcObject = stream;
-          this.setState({
-            videoTrack: stream.getTracks(),
-          });
+          this.videoTrack = stream.getTracks();
+          // this.setState({
+          //   videoTrack: stream.getTracks(),
+          // });
         },
         (err) => console.error(err)
       );
@@ -170,10 +165,11 @@ class FaceDetection extends React.Component {
         ref.detectTimer = setInterval(async () => {
           // , new faceapi.TinyFaceDetectorOptions()
           const detections = await faceapi
-            .detectAllFaces(video,  new faceapi.TinyFaceDetectorOptions())
+            .detectAllFaces(video, new faceapi.TinyFaceDetectorOptions())
             .withFaceLandmarks()
             .withFaceExpressions()
             .withFaceDescriptors();
+          ref.videoDetections = detections;
           const resizedDetections = faceapi.resizeResults(
             detections,
             displaySize
@@ -182,19 +178,10 @@ class FaceDetection extends React.Component {
           faceapi.draw.drawDetections(canvas, resizedDetections);
           faceapi.draw.drawFaceLandmarks(canvas, resizedDetections);
           faceapi.draw.drawFaceExpressions(canvas, resizedDetections);
-          if(ref.state.isLoadingVideo) {ref.setState({isLoadingVideo: false})}
-          // if (ref.state.faceMatcher) {
-          //   // console.log(detections)
-          //   if (detections.length !== 0) {
-          //     const bestMatch = ref.state.faceMatcher.findBestMatch(
-          //       detections[0].descriptor
-          //     );
-          //     // ref.setState({ perception: bestMatch });
-          //     // console.log(bestMatch);
-          //     console.log(bestMatch.toString());
-          //   }
-          // }
-        }, 70);
+          if (ref.state.isLoadingVideo) {
+            ref.setState({ isLoadingVideo: false });
+          }
+        }, 100);
       };
     }
   }
@@ -219,27 +206,37 @@ class FaceDetection extends React.Component {
       faceapi.draw.drawDetections(canvas, resizedDetections);
       faceapi.draw.drawFaceLandmarks(canvas, resizedDetections);
       faceapi.draw.drawFaceExpressions(canvas, resizedDetections);
+
+      // ? save facematcher
+
+      if (!detections.length) {
+        return;
+      }
+
+      // create FaceMatcher with automatically assigned labels
+      // from the detection results for the reference image
+      this.faceMatcher = new faceapi.FaceMatcher(detections);
     } else {
-      toastLux("Please choose another snapshot");
+      toastLux(
+        "Please choose another snapshot, the cannot extract landmark from current snapshot"
+      );
     }
   }
 
   async compare() {
-    const results = await faceapi
-      .detectAllFaces(document.getElementById("myCanvas"))
-      .withFaceLandmarks()
-      .withFaceDescriptors();
-
-    // , new faceapi.TinyFaceDetectorOptions()
-    // ,new faceapi.TinyFaceDetectorOptions()
-    if (!results.length) {
-      return;
+    if (this.faceMatcher) {
+      // console.log(detections)
+      if (this.videoDetections.length !== 0) {
+        const bestMatch = this.faceMatcher.findBestMatch(
+          this.videoDetections[0].descriptor
+        );
+        this.setState({ perception: bestMatch });
+        console.log(bestMatch);
+        console.log(bestMatch.toString());
+      } else {
+        toastLux("Cannot detect possible object to compare!");
+      }
     }
-
-    // create FaceMatcher with automatically assigned labels
-    // from the detection results for the reference image
-    const faceMatcher = new faceapi.FaceMatcher(results);
-    this.setState({ faceMatcher: faceMatcher });
   }
 
   render() {
@@ -290,14 +287,22 @@ class FaceDetection extends React.Component {
           </SnapCompareControl>
           <SnapCompareControl>
             <ControlTitle>Match Perception</ControlTitle>
-            <div>Match: {perception}</div>
+            {/* <div>Match: {perception}</div> */}
+            <ul>
+              <li>Type: {_.get(perception, "_label")}</li>
+              <li>
+                Match: {`${(1 - _.get(perception, "_distance")) * 100 || 0}%`}
+              </li>
+            </ul>
           </SnapCompareControl>
         </Control>
         <VideoWrapper id="camFrame">
           <ControlTitle>Stream video</ControlTitle>
-          {isLoadingVideo && <SpinnerWrapper>
-           <Spinner color="warning" />
-          </SpinnerWrapper>}
+          {isLoadingVideo && (
+            <SpinnerWrapper>
+              <Spinner color="warning" />
+            </SpinnerWrapper>
+          )}
           <video
             id="video"
             ref={this.refVideo}
