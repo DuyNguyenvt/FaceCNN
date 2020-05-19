@@ -3,6 +3,9 @@
 1. Reactjs, redux, redux-saga, styled-components, scss.
 2. Impement Face Recognition with reference snapshot.
 
+## Terminate VDC port
+sudo killall VDCAssistant
+
 ## Available Scripts
 
 In the project directory, you can run:
