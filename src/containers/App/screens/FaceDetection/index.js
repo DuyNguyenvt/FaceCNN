@@ -2,7 +2,7 @@ import React from "react";
 import styled from "styled-components";
 // import * as canvas from "canvas";
 import { toastLux } from "utils/toast";
-import { Spinner } from "reactstrap";
+import { Spinner, Row, Col, Container } from "reactstrap";
 import * as _ from "lodash";
 
 import { Button } from "reactstrap";
@@ -10,6 +10,8 @@ import * as faceapi from "face-api.js";
 
 const Wrapper = styled.div`
   display: flex;
+  flex-wrap: wrap;
+  margin: 0;
   margin-bottom: 10px;
 `;
 
@@ -17,24 +19,43 @@ const VideoWrapper = styled.div`
   position: relative;
   canvas {
     position: absolute;
-    top: 10px;
-    left: 0;
+    left: 50%;
+    top: 0;
+
+    height: 100%;
+    transform: translate(-50%, 0);
   }
   border: solid 1px;
   border-radius: 10px;
-  padding-top: 10px;
+  height: 350px;
+  padding: 10px 0;
+  max-width: 100vw;
+  max-height: calc(400 / 630 * 100vw);
+`;
+
+const VideoInnerContainer = styled.div`
+  position: relative;
+  width: 100%;
+  height: 100%;
+  text-align: center;
+  video {
+    max-width: 100%;
+  }
 `;
 
 const Control = styled.div`
   display: flex;
   flex-direction: column;
   padding: 0px 10px;
-  width: 20%;
+  button {
+    margin-bottom: 5px;
+  }
 `;
 
 const StartStopControl = styled.div`
   display: flex;
-  justify-content: space-around;
+  flex-direction: column;
+  justify-content: flex-start;
   border: solid 1px;
   padding: 10px;
   border-radius: 10px;
@@ -43,12 +64,13 @@ const StartStopControl = styled.div`
 
 const SnapCompareControl = styled.div`
   display: flex;
-  justify-content: space-around;
+  justify-content: flex-start;
   border: solid 1px;
   padding: 10px;
   border-radius: 10px;
   position: relative;
   margin-top: 30px;
+  flex-direction: column;
 `;
 
 const ControlTitle = styled.div`
@@ -59,18 +81,12 @@ const ControlTitle = styled.div`
   left: 7px;
   background: white;
   padding: 0 3px;
-`;
-
-const SnapShotWrapper = styled.div`
-  border: solid 1px;
-  border-radius: 10px;
-  margin-left: 5px;
-  position: relative;
-  padding-top: 10px;
+  white-space: nowrap;
+  max-width: 90%;
+  overflow-x: hidden;
 `;
 
 const SpinnerWrapper = styled.div`
-  border: solid 2px;
   position: absolute;
   height: 100%;
   width: 100%;
@@ -79,6 +95,19 @@ const SpinnerWrapper = styled.div`
   justify-content: center;
   align-items: center;
 `;
+
+const SnapShotWrapper = styled.div`
+  border: solid 1px;
+  border-radius: 10px;
+  margin-left: 5px;
+  position: relative;
+  padding-top: 10px;
+  height: 350px;
+  max-width: 100vw;
+  max-height: calc(400 / 630 * 100vw);
+`;
+
+const SnapShotCanvas = styled.canvas``;
 
 class FaceDetection extends React.Component {
   constructor(props) {
@@ -93,6 +122,7 @@ class FaceDetection extends React.Component {
     this.videoDetections = null;
     this.faceMatcher = null;
     this.videoTrack = null;
+    this.localStream = null;
   }
   async componentDidMount() {
     const uri = "/weights";
@@ -120,11 +150,17 @@ class FaceDetection extends React.Component {
     const video = document.getElementById("video");
     if (this.videoTrack) {
       clearInterval(this.detectTimer);
-      video.pause();
-      this.videoTrack[0].stop();
-      this.videoTrack[1].stop();
-      this.videoTrack = null;
-      video.src = "";
+      setTimeout(() => {
+        // video.pause();
+        this.videoTrack[0].stop();
+        this.videoTrack[1].stop();
+        this.videoTrack = null;
+        video.src = "";
+        const $videoCanvas = document.querySelector("#videoCanvas");
+        $videoCanvas
+          .getContext("2d")
+          .clearRect(0, 0, $videoCanvas.width, $videoCanvas.height);
+      }, 1000);
     }
   }
 
@@ -144,6 +180,7 @@ class FaceDetection extends React.Component {
         (stream) => {
           video.srcObject = stream;
           this.videoTrack = stream.getTracks();
+          this.localStream = stream;
         },
         (err) => console.error(err)
       );
@@ -154,9 +191,13 @@ class FaceDetection extends React.Component {
         //show in the video element what is being captured by the webcam
         video.play();
         const canvas = await faceapi.createCanvasFromMedia(video);
+        canvas.setAttribute("id", "videoCanvas");
         document.querySelector("#camFrame").append(canvas);
 
-        const displaySize = { width: video.width, height: video.height };
+        const displaySize = {
+          width: video.clientWidth,
+          height: video.clientHeight,
+        };
         faceapi.matchDimensions(canvas, displaySize);
         ref.detectTimer = setInterval(async () => {
           // , new faceapi.TinyFaceDetectorOptions()
@@ -186,11 +227,13 @@ class FaceDetection extends React.Component {
     const video = document.getElementById("video");
     let canvas = document.getElementById("myCanvas");
     let ctx = canvas.getContext("2d");
-    // Draws current image from the video element into the canvas
-    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+    ctx.drawImage(video, 0, 0, 300, 200);
     //  canvas.getContext("2d").clearRect(0, 0, canvas.width,
-    const displaySize = { width: 600, height: 430 };
-
+    const displaySize = {
+      width: video.clientWidth,
+      height: video.clientHeight,
+    };
+    // faceapi.matchDimensions(canvas, displaySize);
     const detections = await faceapi
       .detectAllFaces(document.getElementById("myCanvas"))
       .withFaceLandmarks()
@@ -233,80 +276,97 @@ class FaceDetection extends React.Component {
 
   render() {
     const { isStartBtnDisabled, perception, isLoadingVideo } = this.state;
+    const snapshotHeight = _.get(
+      document.getElementById("video"),
+      "clientHeight"
+    );
+    const snapshotWidth = _.get(
+      document.getElementById("video"),
+      "clientWidth"
+    );
     return (
-      <Wrapper>
-        <Control>
-          <StartStopControl>
-            <ControlTitle>Start/Stop camera stream</ControlTitle>
-            <Button
-              className="btn-control"
-              color="success"
-              onClick={() => {
-                this.startVideo();
-              }}
-              disabled={isStartBtnDisabled}
-            >
-              Start Stream
-            </Button>
-            <Button
-              className="btn-control"
-              color="warning"
-              onClick={() => {
-                this.stopStream();
-              }}
-            >
-              Stop Stream
-            </Button>
-          </StartStopControl>
-          <SnapCompareControl>
-            <ControlTitle>Snapshot and Compare</ControlTitle>
-            <Button
-              color="info"
-              onClick={() => {
-                this.snapShot();
-              }}
-            >
-              snapshot
-            </Button>
-            <Button
-              color="primary"
-              onClick={() => {
-                this.compare();
-              }}
-            >
-              Compare
-            </Button>
-          </SnapCompareControl>
-          <SnapCompareControl>
-            <ControlTitle>Match Perception</ControlTitle>
-            {/* <div>Match: {perception}</div> */}
-            <ul>
-              <li>Type: {_.get(perception, "_label")}</li>
-              <li>
-                Match: {`${(1 - _.get(perception, "_distance")) * 100 || 0}%`}
-              </li>
-            </ul>
-          </SnapCompareControl>
-        </Control>
-        <VideoWrapper id="camFrame">
-          <ControlTitle>Stream video</ControlTitle>
-          {isLoadingVideo && (
-            <SpinnerWrapper>
-              <Spinner color="warning" />
-            </SpinnerWrapper>
-          )}
-          <video
-            id="video"
-            ref={this.refVideo}
-            width="600"
-            height="430"
-            muted
-          />
-        </VideoWrapper>
-        <SnapShotWrapper>
-          <ControlTitle>Reference picture</ControlTitle>
-          <canvas id="myCanvas" width="600" height="430"></canvas>
-        </SnapShotWrapper>
+      <Wrapper className="row">
+        <Col md={12} lg={2} className="mb-4">
+          <Control>
+            <StartStopControl>
+              <ControlTitle>Start/Stop camera stream</ControlTitle>
+              <Button
+                className="btn-control"
+                color="success"
+                onClick={() => {
+                  this.startVideo();
+                }}
+                disabled={isStartBtnDisabled}
+              >
+                Start Stream
+              </Button>
+              <Button
+                className="btn-control"
+                color="warning"
+                onClick={() => {
+                  this.stopStream();
+                }}
+              >
+                Stop Stream
+              </Button>
+            </StartStopControl>
+            <SnapCompareControl>
+              <ControlTitle>Snapshot and Compare</ControlTitle>
+              <Button
+                color="info"
+                onClick={() => {
+                  this.snapShot();
+                }}
+              >
+                snapshot
+              </Button>
+              <Button
+                color="primary"
+                onClick={() => {
+                  this.compare();
+                }}
+              >
+                Compare
+              </Button>
+            </SnapCompareControl>
+            <SnapCompareControl>
+              <ControlTitle>Match Perception</ControlTitle>
+              {/* <div>Match: {perception}</div> */}
+              <ul>
+                <li>Type: {_.get(perception, "_label")}</li>
+                <li>
+                  Match:{" "}
+                  {`${
+                    Math.round((1 - _.get(perception, "_distance")) * 100) || 0
+                  }%`}
+                </li>
+              </ul>
+            </SnapCompareControl>
+          </Control>
+        </Col>
+        <Col md={12} lg={5} className="mb-2">
+          <VideoWrapper>
+            <ControlTitle>Stream video</ControlTitle>
+            <VideoInnerContainer id="camFrame">
+              {isLoadingVideo && (
+                <SpinnerWrapper>
+                  <Spinner color="warning" />
+                </SpinnerWrapper>
+              )}
+              <video id="video" ref={this.refVideo} height="100%" muted />
+            </VideoInnerContainer>
+          </VideoWrapper>
+        </Col>
+        <Col mg={12} lg={5}>
+          <SnapShotWrapper>
+            <ControlTitle>Reference picture</ControlTitle>
+            <SnapShotCanvas
+              id="myCanvas"
+              height={snapshotHeight || 600}
+              width={snapshotWidth || 420}
+            ></SnapShotCanvas>
+          </SnapShotWrapper>
+        </Col>
       </Wrapper>
     );
   }

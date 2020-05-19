@@ -74,7 +74,7 @@ function Footer() {
   return (
     <FooterX>
       <Container className="container">
-        <HeadLine>Tour End</HeadLine>
+        <HeadLine>Thank You</HeadLine>
         <SubHeadLine id="pf-banner--sub-headelin"> Contact Me</SubHeadLine>
         <div className="pf-footer--devider">
           <div>

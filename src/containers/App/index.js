@@ -7,7 +7,7 @@ import "themes/css/App.css";
 import "themes/scss/main.scss";
 import "GlobalStyle.scss";
 import { withMainLayout } from "components/Layouts";
-import Login from "containers/App/screens/Login";
+// import Login from "containers/App/screens/Login";
 import Modals from "containers/Modals/Injectable";
 import Resume from "containers/App/screens/Resume";
 import FaceDetection from "containers/App/screens/FaceDetection";
@@ -17,7 +17,7 @@ function App() {
     <>
       <Switch>
         <Route exact path="/" component={withMainLayout(FaceDetection)} />
-        <Route exact path="/login" component={withMainLayout(Login)} />
+        {/* <Route exact path="/login" component={withMainLayout(Login)} /> */}
         <Route exact path="/resume" component={withMainLayout(Resume)} />
         <Redirect to="/" />
       </Switch>
