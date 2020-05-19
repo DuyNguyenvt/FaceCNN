@@ -1,12 +1,7 @@
-## MY PORTFOLIO
+## FACE API CONVOLUTIONAL NEURAL NETWORK
 
 1. Reactjs, redux, redux-saga, styled-components, scss.
-2. Deployed with heroku.
-3. My VPS hosting expired a month ago. Heroku is absolutely not bad solution to cut cost.
-
-## Heroku deployed page
-
-https://portfolio-app-duy-nguyen.herokuapp.com/
+2. Impement Face Recognition with reference snapshot.
 
 ## Available Scripts
 
