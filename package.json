@@ -20,7 +20,7 @@
     "express": "^4.17.1",
     "face-api.js": "^0.22.2",
     "immutable": "^4.0.0-rc.12",
-    "node-sass": "^4.13.1",
+    "node-sass": "^7.0.0",
     "react": "^16.13.1",
     "react-chartjs-2": "^2.9.0",
     "react-dom": "^16.13.1",
